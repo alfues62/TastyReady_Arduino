@@ -1,0 +1,57 @@
+# get_MQTT_data.py
+
+import paho.mqtt.client as mqtt
+import pyrebase
+
+MQTT_ADRESS = '192.168.177.139'
+MQTT_USER = 'carlos'
+MQTT_PASSWORD = 'carlos'
+MQTT_TOPIC = 'bolando/+/+'
+
+config = {
+        "apiKey": "AIzaSyBglTt6aNPMnp_9hoS3Y4h0DyOFlUtFCzc",
+        "authDomain": "bolando-e081f.firebaseapp.com",
+        "databaseURL": "https://bolando-e081f-default-rtdb.europe-west1.firebasedatabase.app/",
+        "storageBucket": "bolando-e081f.appshot.com"
+}
+
+firebase = pyrebase.initialize_app(config)
+
+db = firebase.database()
+
+def on_connect(client, userdata, flags, rc):
+        print('Connected with result code ' + str(rc))
+        client.subscribe(MQTT_TOPIC)
+
+
+def on_message(client, userdata, msg):
+        print(msg.topic +' '+ msg.payload.decode())
+        if msg.topic == "bolando/Cullera/temperatura":
+                data = {
+                        "Temperatura" : msg.payload.decode()
+                }
+                db.child("Cullera").update(data)
+                print("temperatura en cullera enviada a la base de datos")
+
+        elif msg.topic == "bolando/Cullera/humedad":
+                data = {
+                        "Humedad" : msg.payload.decode()
+                        }
+                db.child("Cullera").update(data)
+                print("humedad en cullera enviada a la base de datos")
+
+        elif msg.topic == "bolando/Cullera/Iluminacion":
+                print("Luminosidad de la BBDD recibida")
+
+def main():
+        mqtt_client = mqtt.Client()
+        mqtt_client.username_pw_set('carlos','carlos')
+        mqtt_client.on_connect=on_connect
+        mqtt_client.on_message=on_message
+
+        mqtt_client.connect(MQTT_ADRESS, 1883)
+        mqtt_client.loop_forever()
+
+if _name=='__main_':
+        print('MQTT to INfluxDB bridge')
+        main()
